@@ -39,11 +39,12 @@ fizko companies get <uuid>
 ### Tax documents
 ```bash
 # Lists (paginated)
-fizko tax purchases --company <uuid> [--period-year 2026] [--period-month 1]
-fizko tax sales --company <uuid> [--period-year 2026] [--period-month 1]
-fizko tax honorarios --company <uuid> [--period-year 2026]
-fizko tax documents --company <uuid> [--period 2026-01]   # purchases + sales + honorarios unified
-fizko tax documents-summary --company <uuid>              # count by type, last 3 months
+fizko tax purchases --company <uuid> [--period-year 2026] [--period-month 1] [--document-type 33]
+fizko tax sales --company <uuid> [--period-year 2026] [--period-month 1] [--document-type 33]
+fizko tax honorarios --company <uuid> [--period-year 2026] [--period-month 1]
+fizko tax documents --company <uuid> [--period 2026-01] [--start-date 2026-01-01] [--end-date 2026-01-31]
+fizko tax documents-summary --company <uuid>   # count by type, last 3 months
+fizko tax contacts --company <uuid>            # suppliers and clients from tax documents
 
 # Individual records
 fizko tax purchase <uuid>
@@ -52,13 +53,16 @@ fizko tax document <uuid>
 
 # F29 and tax forms
 fizko tax f29 --company <uuid> [--year 2026]
+fizko tax f29-codes --company <uuid> --period 2026-01    # exportable F29 codes for a period
+fizko tax f29-export --company <uuid> --code <code> --period 2026-01
 fizko tax summary --company <uuid> --period 2026-01
 fizko tax iva --company <uuid> --period 2026-01
 fizko tax timeline --company <uuid>
+fizko tax ddjj --company <uuid> [--year 2025]            # declaraciones juradas
 
 # Checkers (discrepancy analysis)
-fizko tax checker-tributario --company <uuid> --period 2026-01
-fizko tax checker-impuestos --company <uuid> --period 2026-01
+fizko tax checker-tributario --company <uuid> --period 2026-01   # SII book vs Fizko
+fizko tax checker-impuestos --company <uuid> --period 2026-01    # F29 declared vs Fizko
 ```
 
 ### Accounting
@@ -70,48 +74,52 @@ fizko accounting journal-entry <uuid>
 fizko accounting progress --company <uuid> [--period 2026-01]
 
 # Reports
-fizko accounting balance-report --company <uuid> --period-from 2026-01 --period-to 2026-12
-fizko accounting income-statement --company <uuid> --period-from 2026-01 --period-to 2026-12
-fizko accounting general-journal --company <uuid> --period 2026-01
-fizko accounting general-ledger --company <uuid> --period-from 2026-01 --period-to 2026-12
-fizko accounting classified-balance --company <uuid> --period 2026-12
+fizko accounting balance-report --company <uuid> --period-from 2026-01 --period-to 2026-12 [--cost-center-id <uuid>]
+fizko accounting income-statement --company <uuid> --period-from 2026-01 --period-to 2026-12 [--cost-center-id <uuid>]
+fizko accounting general-journal --company <uuid> --period 2026-01 [--page <n>] [--page-size <n>]
+fizko accounting general-ledger --company <uuid> --period-from 2026-01 --period-to 2026-12 [--account-id <uuid>]
+fizko accounting classified-balance --company <uuid> [--period 2026-12] [--period-from 2026-01 --period-to 2026-12]
 fizko accounting rli-balance --company <uuid> --period-from 2026-01 --period-to 2026-12
 
 # Obligations (cuentas por pagar/cobrar)
-fizko accounting obligations --company <uuid> [--status pending] [--obligation-type payable]
+# --status: pending, partial, paid, overdue
+# --obligation-type: payable, receivable
+fizko accounting obligations --company <uuid> [--status pending] [--obligation-type payable] [--period 2026-01]
 fizko accounting obligation <uuid>
-fizko accounting contabilizar <uuid> [--lines '[{"account_code":"5101","debit":1000,"credit":0}]']
+fizko accounting contabilizar <uuid> [--lines '[{"account_code":"5101","debit":1000,"credit":0}]'] [--account-code 5101] [--description "texto"]
 fizko accounting descontabilizar <uuid>
-fizko accounting abonar <uuid> --amount 50000 --payment-type cash [--notes "texto"]
-  # payment-type options: cash, check, third_party, international, factoring, bad_debt
+fizko accounting abonar <uuid> --amount 50000 --payment-type cash [--notes "texto"] [--no-contabilizar]
+  # payment-type: cash, check, third_party, international, factoring, bad_debt
 ```
 
 ### Banking (movimientos bancarios)
 ```bash
 # Read
-fizko banking movements --company <uuid> [--status pending] [--period 2026-01]
+# --status: pending, reconciled, matched, split
+fizko banking movements --company <uuid> [--status pending] [--period 2026-01] [--classification "Gasto Operacional"]
 fizko banking movement <uuid>
 fizko banking list-reconciliations --company <uuid> [--period 2026-01]
 fizko banking suggestions --company <uuid> --movement-id <uuid>
 fizko banking status --company <uuid> [--period 2026-01]
 
 # Actions on a specific movement
-fizko banking classify <uuid> --classification 'Gasto Operacional' [--comment "texto"]
+fizko banking classify <uuid> --classification 'Gasto Operacional' [--document-type 'Factura'] [--comment "texto"]
 fizko banking contabilizar <uuid> --account-code 5101 [--description "texto"]
+fizko banking contabilizar-reconciliaciones <uuid> --entries '[{"reconciliation_id":"UUID","lines":[{"account_code":"5101","debit":1000,"credit":0}]}]'
 fizko banking descontabilizar <uuid>
 
 # Reconciliation
-fizko banking reconcile --movement-id <uuid> --obligation-id <uuid> [--amount 50000]
-fizko banking reconcile-multi --movement-id <uuid> --obligation-ids UUID1,UUID2
+fizko banking reconcile --movement-id <uuid> --obligation-id <uuid> [--amount 50000] [--notes "texto"]
+fizko banking reconcile-multi --movement-id <uuid> --obligation-ids UUID1,UUID2 [--notes "texto"]
 fizko banking unmatch <reconciliation-uuid>
-fizko banking obligation-from-movement <uuid> [--classification 'Gasto Operacional']
+fizko banking obligation-from-movement <uuid> [--classification 'Gasto Operacional'] [--obligation-type payable]
 ```
 
 ## Handling output
 
 All commands return JSON. When presenting results to the user:
 
-- **Lists**: Show a summary table with the most relevant fields, not the raw JSON dump. For example, for bank movements show date, description, amount, status — not every field.
+- **Lists**: Show a summary table with the most relevant fields, not the raw JSON dump. For bank movements show date, description, amount, status.
 - **Single records**: Show the key fields the user likely cares about, and mention there's more detail available if they want.
 - **Errors**: If a command exits with an error (stderr), explain what went wrong in plain language and suggest the fix.
 - **Pagination**: If results show a `count` much larger than `results`, let the user know there are more pages and offer to fetch them with `--offset`.
@@ -128,12 +136,16 @@ All commands return JSON. When presenting results to the user:
 
 ### "Concilia este movimiento con su factura"
 1. If user gives movement ID and obligation ID: `fizko banking reconcile --movement-id <uuid> --obligation-id <uuid>`
-2. If user only gives movement ID: run `fizko banking suggestions --company <uuid> --movement-id <uuid>` first to show candidates, then reconcile after confirmation.
+2. If user only gives movement ID: `fizko banking suggestions --company <uuid> --movement-id <uuid>` to show candidates, then reconcile after confirmation.
 3. If no matching obligation exists: `fizko banking obligation-from-movement <uuid>`
 
 ### "Contabiliza este movimiento"
 1. `fizko accounting accounts --company <uuid>` to help user pick the account code if they don't know it.
 2. `fizko banking contabilizar <uuid> --account-code <code>`
+
+### "Contabiliza las reconciliaciones de este movimiento"
+1. `fizko banking movement <uuid>` to see the reconciliations and their IDs.
+2. `fizko banking contabilizar-reconciliaciones <uuid> --entries '[{"reconciliation_id":"UUID","lines":[...]}]'`
 
 ### "¿Cómo vamos con la contabilidad de enero?"
 1. `fizko accounting progress --company <uuid> --period YYYY-MM`
@@ -145,3 +157,4 @@ All commands return JSON. When presenting results to the user:
 - Period format is always `YYYY-MM` (e.g., `2026-01`).
 - When the user says "este mes" or "el mes pasado", calculate the actual period before running the command.
 - UUIDs: if the user pastes a partial UUID or a name instead of UUID, run `companies list` or the relevant list command to find the right ID.
+- `fizko accounting contabilizar` without `--lines` auto-generates the journal entry; use `--lines` when you need to specify exact debit/credit lines.
