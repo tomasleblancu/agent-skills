@@ -1,0 +1,38 @@
+{
+  "skill_name": "fizko",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Muéstrame los movimientos bancarios pendientes de conciliar de mi empresa. El UUID de mi empresa es 550e8400-e29b-41d4-a716-446655440000",
+      "expected_output": "Claude runs 'fizko banking movements --company 550e8400-e29b-41d4-a716-446655440000 --status pending' and presents the results as a readable table, not raw JSON.",
+      "files": [],
+      "assertions": [
+        "Runs fizko banking movements with --status pending and the correct company UUID",
+        "Presents results as a table or readable summary, not raw JSON dump",
+        "Offers to classify or reconcile movements from the results"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "¿Cuánto IVA debería pagar este mes? Estamos en marzo 2026. Mi empresa es 550e8400-e29b-41d4-a716-446655440000",
+      "expected_output": "Claude runs 'fizko tax iva --company <uuid> --period 2026-03' and presents the IVA debito, credito, and balance clearly in plain language.",
+      "files": [],
+      "assertions": [
+        "Correctly calculates the current period as 2026-03",
+        "Runs fizko tax iva with --period 2026-03",
+        "Shows IVA debito, credito, and the net balance clearly"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Concilia el movimiento bancario fd7a1234-aaaa-bbbb-cccc-000000000001 con la obligación fd7a1234-aaaa-bbbb-cccc-000000000002",
+      "expected_output": "Claude runs 'fizko banking reconcile --movement-id <uuid> --obligation-id <uuid>' and confirms the reconciliation was successful.",
+      "files": [],
+      "assertions": [
+        "Runs fizko banking reconcile with both UUIDs correctly placed",
+        "Confirms the result to the user in plain language",
+        "Does not ask for the company UUID since it's not needed for this specific action"
+      ]
+    }
+  ]
+}
