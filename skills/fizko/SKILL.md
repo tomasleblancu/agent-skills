@@ -18,15 +18,31 @@ fizko status
 
 If the output says "No autenticado", tell the user to run `fizko login` and wait for them. If `fizko` is not found, tell them to run `npm install -g fizko-cli`.
 
-## The golden rule: always need a company UUID
+The status output also shows the active company. If it says "Sin empresa activa", handle it as described below.
 
-Almost every command requires `--company <uuid>`. If the user hasn't provided one, run this first:
+## Active company
 
+Almost every command needs a company context. The CLI resolves it automatically in this order:
+
+1. `--company <uuid>` flag (explicit override for this command only)
+2. Saved active company (`fizko companies use <uuid>` sets this persistently)
+3. Auto-activate if the user has exactly 1 company
+
+If none of the above apply, the command fails with an error asking to run `fizko companies use <uuid>`.
+
+**When there's no active company** and the user has multiple companies:
 ```bash
-fizko companies list
+fizko companies list          # show available companies
+fizko companies use <uuid>    # activate one persistently
 ```
 
-Show them the list and ask which company they want to work with. Once you have the UUID, use it for all subsequent commands in the conversation — don't ask again.
+Once activated, all subsequent commands work without `--company`. You don't need to ask again during the conversation.
+
+**To check or change the active company:**
+```bash
+fizko companies active        # show current active company
+fizko companies use <uuid>    # switch to a different company
+```
 
 ## Command reference
 
@@ -34,17 +50,19 @@ Show them the list and ask which company they want to work with. Once you have t
 ```bash
 fizko companies list
 fizko companies get <uuid>
+fizko companies use <uuid>    # activate as default
+fizko companies active        # show current active company
 ```
 
 ### Tax documents
 ```bash
-# Lists (paginated)
-fizko tax purchases --company <uuid> [--period-year 2026] [--period-month 1] [--document-type 33]
-fizko tax sales --company <uuid> [--period-year 2026] [--period-month 1] [--document-type 33]
-fizko tax honorarios --company <uuid> [--period-year 2026] [--period-month 1]
-fizko tax documents --company <uuid> [--period 2026-01] [--start-date 2026-01-01] [--end-date 2026-01-31]
-fizko tax documents-summary --company <uuid>     # count by type, last 3 months
-fizko tax contacts --company <uuid>              # suppliers and clients
+# Lists (paginated) — --company optional if active company is set
+fizko tax purchases [--period-year 2026] [--period-month 1] [--document-type 33]
+fizko tax sales [--period-year 2026] [--period-month 1] [--document-type 33]
+fizko tax honorarios [--period-year 2026] [--period-month 1]
+fizko tax documents [--period 2026-01] [--start-date 2026-01-01] [--end-date 2026-01-31]
+fizko tax documents-summary              # count by type, last 3 months
+fizko tax contacts                       # suppliers and clients
 
 # Individual records
 fizko tax purchase <uuid>
@@ -52,43 +70,43 @@ fizko tax sale <uuid>
 fizko tax document <uuid>
 
 # F29 and tax forms
-fizko tax f29 --company <uuid> [--year 2026]
-fizko tax f29-codes --company <uuid> --period 2026-01
-fizko tax f29-export --company <uuid> --code <code> --period 2026-01
-fizko tax summary --company <uuid> --period 2026-01
-fizko tax iva --company <uuid> --period 2026-01
-fizko tax timeline --company <uuid>
-fizko tax ddjj --company <uuid> [--year 2025]
+fizko tax f29 [--year 2026]
+fizko tax f29-codes --period 2026-01
+fizko tax f29-export --code <code> --period 2026-01
+fizko tax summary --period 2026-01
+fizko tax iva --period 2026-01
+fizko tax timeline
+fizko tax ddjj [--year 2025]
 
 # Checkers (discrepancy analysis)
-fizko tax checker-tributario --company <uuid> --period 2026-01   # SII book vs Fizko
-fizko tax checker-impuestos --company <uuid> --period 2026-01    # F29 declared vs Fizko
+fizko tax checker-tributario --period 2026-01   # SII book vs Fizko
+fizko tax checker-impuestos --period 2026-01    # F29 declared vs Fizko
 ```
 
 ### Accounting
 ```bash
-# Plan de cuentas y asientos
-fizko accounting accounts --company <uuid> [--tree]
-fizko accounting journal-entries --company <uuid> [--period 2026-01]
+# Plan de cuentas y asientos — --company opcional si hay empresa activa
+fizko accounting accounts [--tree]
+fizko accounting journal-entries [--period 2026-01]
 fizko accounting journal-entry <uuid>
-fizko accounting progress --company <uuid> [--period 2026-01]
+fizko accounting progress [--period 2026-01]
 
 # Reportes financieros
-fizko accounting balance-report --company <uuid> --period-from 2026-01 --period-to 2026-12 [--cost-center-id <uuid>]
-fizko accounting income-statement --company <uuid> --period-from 2026-01 --period-to 2026-12 [--cost-center-id <uuid>]
-fizko accounting general-journal --company <uuid> --period 2026-01 [--page <n>] [--page-size <n>]
-fizko accounting general-ledger --company <uuid> --period-from 2026-01 --period-to 2026-12 [--account-id <uuid>]
-fizko accounting classified-balance --company <uuid> [--period 2026-12] [--period-from 2026-01 --period-to 2026-12]
-fizko accounting rli-balance --company <uuid> --period-from 2026-01 --period-to 2026-12
+fizko accounting balance-report --period-from 2026-01 --period-to 2026-12 [--cost-center-id <uuid>]
+fizko accounting income-statement --period-from 2026-01 --period-to 2026-12 [--cost-center-id <uuid>]
+fizko accounting general-journal --period 2026-01 [--page <n>] [--page-size <n>]
+fizko accounting general-ledger --period-from 2026-01 --period-to 2026-12 [--account-id <uuid>]
+fizko accounting classified-balance [--period 2026-12] [--period-from 2026-01 --period-to 2026-12]
+fizko accounting rli-balance --period-from 2026-01 --period-to 2026-12
 
 # Centros de costo
-fizko accounting cost-centers --company <uuid>
+fizko accounting cost-centers
 
 # Obligaciones (cuentas por pagar/cobrar)
 # --status: pending, partial, paid, overdue
 # --obligation-type: payable, receivable
 # --source-document-type: sales_document, purchase_document, honorarios_receipt, payroll_period, form29
-fizko accounting obligations --company <uuid> [--status pending] [--obligation-type payable] [--source-document-type purchase_document] [--search texto] [--from 2026-01-01] [--to 2026-01-31] [--conciliado true|false] [--contabilizado true|false]
+fizko accounting obligations [--status pending] [--obligation-type payable] [--source-document-type purchase_document] [--search texto] [--from 2026-01-01] [--to 2026-01-31] [--conciliado true|false] [--contabilizado true|false]
 fizko accounting obligation <uuid>
 
 fizko accounting suggest-lines <uuid>            # sugerencia de líneas de asiento
@@ -102,24 +120,24 @@ fizko accounting payments <uuid>                 # listar abonos de una obligaci
 fizko accounting reverse-payment <uuid> --payment-id <uuid>
 
 fizko accounting set-cost-center <uuid> --cost-center <uuid>
-fizko accounting sync --company <uuid> [--period 2026-01] [--obligation-type payable] [--force]
+fizko accounting sync [--period 2026-01] [--obligation-type payable] [--force]
 ```
 
 ### Banking (movimientos bancarios)
 ```bash
-# Read
+# Read — --company opcional si hay empresa activa
 # --status: pending, reconciled, matched, split
 # --classification-status: classified | unclassified
-fizko banking movements --company <uuid> [--status pending] [--classification-status unclassified] [--type abonos|cargos] [--search texto] [--from 2026-01-01] [--to 2026-01-31] [--period 2026-01] [--bank-account <uuid>]
+fizko banking movements [--status pending] [--classification-status unclassified] [--type abonos|cargos] [--search texto] [--from 2026-01-01] [--to 2026-01-31] [--period 2026-01] [--bank-account <uuid>]
 fizko banking movement <uuid>
-fizko banking list-reconciliations --company <uuid> [--period 2026-01]
-fizko banking suggestions --company <uuid> --movement-id <uuid>
-fizko banking status --company <uuid> [--period 2026-01]
+fizko banking list-reconciliations [--period 2026-01]
+fizko banking suggestions --movement-id <uuid>
+fizko banking status [--period 2026-01]
 
 # Clasificación
 fizko banking classify <uuid> --classification 'Gasto Operacional' [--document-type 'Factura'] [--contact-id <uuid>] [--comment "texto"]
 fizko banking update <uuid> [--category texto] [--comment texto] [--cost-center <uuid>] [--pin true|false]
-fizko banking bulk-classify --company <uuid> --movement-ids UUID1,UUID2 --classification 'Gasto Operacional'
+fizko banking bulk-classify --movement-ids UUID1,UUID2 --classification 'Gasto Operacional'
 
 # Splits
 fizko banking split <uuid> --splits '[{"amount":1000,"description":"texto"},...]'
@@ -149,20 +167,20 @@ All commands return JSON. When presenting results to the user:
 ## Common workflows
 
 ### "¿Cuánto IVA debo este mes?"
-1. `fizko tax iva --company <uuid> --period YYYY-MM`
+1. `fizko tax iva --period YYYY-MM`
 2. Show debito, credito, and balance clearly.
 
 ### "Muéstrame los movimientos bancarios pendientes"
-1. `fizko banking movements --company <uuid> --status pending`
+1. `fizko banking movements --status pending`
 2. Show a table with date, description, amount. Offer to classify or reconcile any of them.
 
 ### "Concilia este movimiento con su factura"
 1. If user gives movement ID and obligation ID: `fizko banking reconcile --movement-id <uuid> --obligation-id <uuid>`
-2. If user only gives movement ID: `fizko banking suggestions --company <uuid> --movement-id <uuid>` to show candidates, then reconcile after confirmation.
+2. If user only gives movement ID: `fizko banking suggestions --movement-id <uuid>` to show candidates, then reconcile after confirmation.
 3. If no matching obligation exists: `fizko banking obligation-from-movement <uuid>`
 
 ### "Contabiliza este movimiento"
-1. `fizko accounting accounts --company <uuid>` if user doesn't know the account code.
+1. `fizko accounting accounts` if user doesn't know the account code.
 2. `fizko banking contabilizar <uuid> --account-code <code>`
 
 ### "Contabiliza las reconciliaciones de este movimiento"
@@ -174,11 +192,11 @@ All commands return JSON. When presenting results to the user:
 2. `fizko accounting contabilizar <uuid> --lines '<suggested lines>'`
 
 ### "¿Cómo vamos con la contabilidad de enero?"
-1. `fizko accounting progress --company <uuid> --period YYYY-MM`
+1. `fizko accounting progress --period YYYY-MM`
 2. Show booked vs pending counts.
 
 ### "Sincronizar obligaciones"
-1. `fizko accounting sync --company <uuid> [--period YYYY-MM]`
+1. `fizko accounting sync [--period YYYY-MM]`
 
 ## Tips
 
