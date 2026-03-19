@@ -1,7 +1,7 @@
 ---
 name: fizko
 description: |
-  Use this skill whenever the user asks about tax documents, accounting data, bank movements, reconciliation, IVA, F29, facturas, compras, ventas, honorarios, obligaciones, asientos contables, or any financial/accounting data for their Chilean business. Also use it when the user asks to classify a bank movement, reconcile a movement with a document, create a journal entry, or perform any accounting action. This skill controls the `fizko` CLI (npm package) to query and act on data from the Fizko API. Use it even if the user doesn't mention "fizko" explicitly — if they're asking about their empresa's financial data or want to do something with a bank movement or tax document, this skill applies.
+  Use this skill whenever the user asks about accounting data, bank movements, reconciliation, IVA, F29, obligaciones, asientos contables, or any financial/accounting data for their Chilean business. Also use it when the user asks to classify a bank movement, reconcile a movement with a document, create a journal entry, or perform any accounting action. This skill controls the `fizko` CLI (npm package) to query and act on data from the Fizko API. Use it even if the user doesn't mention "fizko" explicitly — if they're asking about their empresa's financial data or want to do something with a bank movement or obligation, this skill applies.
 ---
 
 # Fizko CLI Skill
@@ -54,29 +54,12 @@ fizko companies use <uuid>    # activate as default
 fizko companies active        # show current active company
 ```
 
-### Tax documents
+### Tax
 ```bash
-# Lists (paginated) — --company optional if active company is set
-fizko tax purchases [--period-year 2026] [--period-month 1] [--document-type 33]
-fizko tax sales [--period-year 2026] [--period-month 1] [--document-type 33]
-fizko tax honorarios [--period-year 2026] [--period-month 1]
-fizko tax documents [--period 2026-01] [--start-date 2026-01-01] [--end-date 2026-01-31]
-fizko tax documents-summary              # count by type, last 3 months
-fizko tax contacts                       # suppliers and clients
-
-# Individual records
-fizko tax purchase <uuid>
-fizko tax sale <uuid>
-fizko tax document <uuid>
-
-# F29 and tax forms
-fizko tax f29 [--year 2026]
-fizko tax f29-codes --period 2026-01
-fizko tax f29-export --code <code> --period 2026-01
+# Resúmenes — --company opcional si hay empresa activa
 fizko tax summary --period 2026-01
 fizko tax iva --period 2026-01
 fizko tax timeline
-fizko tax ddjj [--year 2025]
 
 # Checkers (discrepancy analysis)
 fizko tax checker-tributario --period 2026-01   # SII book vs Fizko
@@ -94,8 +77,6 @@ fizko accounting progress [--period 2026-01]
 # Reportes financieros
 fizko accounting balance-report --period-from 2026-01 --period-to 2026-12 [--cost-center-id <uuid>]
 fizko accounting income-statement --period-from 2026-01 --period-to 2026-12 [--cost-center-id <uuid>]
-fizko accounting general-journal --period 2026-01 [--page <n>] [--page-size <n>]
-fizko accounting general-ledger --period-from 2026-01 --period-to 2026-12 [--account-id <uuid>]
 fizko accounting classified-balance [--period 2026-12] [--period-from 2026-01 --period-to 2026-12]
 fizko accounting rli-balance --period-from 2026-01 --period-to 2026-12
 
@@ -137,7 +118,6 @@ fizko banking status [--period 2026-01]
 # Clasificación
 fizko banking classify <uuid> --classification 'Gasto Operacional' [--document-type 'Factura'] [--contact-id <uuid>] [--comment "texto"]
 fizko banking update <uuid> [--category texto] [--comment texto] [--cost-center <uuid>] [--pin true|false]
-fizko banking bulk-classify --movement-ids UUID1,UUID2 --classification 'Gasto Operacional'
 
 # Splits
 fizko banking split <uuid> --splits '[{"amount":1000,"description":"texto"},...]'
