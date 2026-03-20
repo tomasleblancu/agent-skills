@@ -48,10 +48,17 @@ fizko companies use <uuid>    # switch to a different company
 
 ### Companies
 ```bash
-fizko companies list
+fizko companies list                        # page 1 (20 results)
+fizko companies list --search "ATAL"        # filter by name or RUT
+fizko companies list --page 2               # next page
 fizko companies get <uuid>
 fizko companies use <uuid>    # activate as default
 fizko companies active        # show current active company
+```
+
+**Finding a company by name:** always use `--search` first. Never loop over pages manually.
+```bash
+fizko companies list --search "nombre o RUT"
 ```
 
 ### Tax
