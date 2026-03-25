@@ -1,12 +1,14 @@
 ---
 name: fizko
 description: |
-  Use this skill whenever the user asks about accounting data, bank movements, reconciliation, IVA, F29, obligaciones, asientos contables, or any financial/accounting data for their Chilean business. Also use it when the user asks to classify a bank movement, reconcile a movement with a document, create a journal entry, or perform any accounting action. This skill controls the `fizko` CLI (npm package) to query and act on data from the Fizko API. Use it even if the user doesn't mention "fizko" explicitly — if they're asking about their empresa's financial data or want to do something with a bank movement or obligation, this skill applies.
+  Use this skill whenever the user asks about accounting data, bank movements, reconciliation, IVA, F29, obligaciones, asientos contables, or any financial/accounting data for their Chilean business. This skill controls the `fizko` CLI (npm package) to query data from the Fizko API. Use it even if the user doesn't mention "fizko" explicitly — if they're asking about their empresa's financial data, this skill applies. This skill is READ-ONLY — it cannot modify data.
 ---
 
 # Fizko CLI Skill
 
 You have access to the `fizko` CLI, which communicates with the Fizko API for Chilean tax and accounting data.
+
+**This skill is read-only.** You can query and view data, but cannot classify, reconcile, contabilizar, or modify any records. If the user asks to perform a write action, tell them to do it from the Fizko web platform.
 
 ## Setup check
 
@@ -86,6 +88,10 @@ fizko accounting balance-report --period-from 2026-01 --period-to 2026-12 [--cos
 fizko accounting income-statement --period-from 2026-01 --period-to 2026-12 [--cost-center-id <uuid>]
 fizko accounting classified-balance [--period 2026-12] [--period-from 2026-01 --period-to 2026-12]
 fizko accounting rli-balance --period-from 2026-01 --period-to 2026-12
+fizko accounting general-ledger [--period YYYY-MM] [--period-from --period-to] [--account-code <code>] [--cost-center-id <uuid>]
+fizko accounting general-journal [--period YYYY-MM] [--period-from --period-to] [--cost-center-id <uuid>]
+fizko accounting cash-flow [--start-date YYYY-MM-DD] [--weeks 5]
+fizko accounting cash-flow-detail --tab ventas|compras|honorarios
 
 # Centros de costo
 fizko accounting cost-centers
@@ -96,19 +102,8 @@ fizko accounting cost-centers
 # --source-document-type: sales_document, purchase_document, honorarios_receipt, payroll_period, form29
 fizko accounting obligations [--status pending] [--obligation-type payable] [--source-document-type purchase_document] [--search texto] [--from 2026-01-01] [--to 2026-01-31] [--conciliado true|false] [--contabilizado true|false]
 fizko accounting obligation <uuid>
-
 fizko accounting suggest-lines <uuid>            # sugerencia de líneas de asiento
-fizko accounting contabilizar <uuid> [--lines '[{"account_code":"5101","debit":1000,"credit":0}]'] [--account-code 5101] [--description "texto"]
-fizko accounting update-journal <uuid> --lines '[...]' [--description "texto"]
-fizko accounting descontabilizar <uuid>
-
-fizko accounting abonar <uuid> --amount 50000 --payment-type cash [--notes "texto"] [--no-contabilizar]
-  # payment-type: cash, check, third_party, international, factoring, bad_debt
 fizko accounting payments <uuid>                 # listar abonos de una obligación
-fizko accounting reverse-payment <uuid> --payment-id <uuid>
-
-fizko accounting set-cost-center <uuid> --cost-center <uuid>
-fizko accounting sync [--period 2026-01] [--obligation-type payable] [--force]
 ```
 
 ### Banking (movimientos bancarios)
@@ -121,25 +116,6 @@ fizko banking movement <uuid>
 fizko banking list-reconciliations [--period 2026-01]
 fizko banking suggestions --movement-id <uuid>
 fizko banking status [--period 2026-01]
-
-# Clasificación
-fizko banking classify <uuid> --classification 'Gasto Operacional' [--document-type 'Factura'] [--contact-id <uuid>] [--comment "texto"]
-fizko banking update <uuid> [--category texto] [--comment texto] [--cost-center <uuid>] [--pin true|false]
-
-# Splits
-fizko banking split <uuid> --splits '[{"amount":1000,"description":"texto"},...]'
-
-# Contabilización
-fizko banking contabilizar <uuid> --account-code 5101 [--description "texto"]
-fizko banking contabilizar-reconciliaciones <uuid> --entries '[{"reconciliation_id":"UUID","lines":[{"account_code":"5101","debit":1000,"credit":0}]}]'
-fizko banking update-journal <uuid> --lines '[...]' [--description "texto"]
-fizko banking descontabilizar <uuid>
-
-# Conciliación
-fizko banking reconcile --movement-id <uuid> --obligation-id <uuid> [--amount 50000] [--notes "texto"]
-fizko banking reconcile-multi --movement-id <uuid> --obligation-ids UUID1,UUID2
-fizko banking unmatch <reconciliation-uuid>
-fizko banking obligation-from-movement <uuid> [--classification 'Gasto Operacional'] [--obligation-type payable]
 ```
 
 ## Handling output
@@ -159,31 +135,11 @@ All commands return JSON. When presenting results to the user:
 
 ### "Muéstrame los movimientos bancarios pendientes"
 1. `fizko banking movements --status pending`
-2. Show a table with date, description, amount. Offer to classify or reconcile any of them.
-
-### "Concilia este movimiento con su factura"
-1. If user gives movement ID and obligation ID: `fizko banking reconcile --movement-id <uuid> --obligation-id <uuid>`
-2. If user only gives movement ID: `fizko banking suggestions --movement-id <uuid>` to show candidates, then reconcile after confirmation.
-3. If no matching obligation exists: `fizko banking obligation-from-movement <uuid>`
-
-### "Contabiliza este movimiento"
-1. `fizko accounting accounts` if user doesn't know the account code.
-2. `fizko banking contabilizar <uuid> --account-code <code>`
-
-### "Contabiliza las reconciliaciones de este movimiento"
-1. `fizko banking movement <uuid>` to see the reconciliations and their IDs.
-2. `fizko banking contabilizar-reconciliaciones <uuid> --entries '[{"reconciliation_id":"UUID","lines":[...]}]'`
-
-### "Contabiliza esta obligación"
-1. `fizko accounting suggest-lines <uuid>` to get the suggested account lines.
-2. `fizko accounting contabilizar <uuid> --lines '<suggested lines>'`
+2. Show a table with date, description, amount.
 
 ### "¿Cómo vamos con la contabilidad de enero?"
 1. `fizko accounting progress --period YYYY-MM`
 2. Show booked vs pending counts.
-
-### "Sincronizar obligaciones"
-1. `fizko accounting sync [--period YYYY-MM]`
 
 ## Tips
 
@@ -191,5 +147,4 @@ All commands return JSON. When presenting results to the user:
 - Period format is always `YYYY-MM` (e.g., `2026-01`).
 - When the user says "este mes" or "el mes pasado", calculate the actual period before running the command.
 - UUIDs: if the user pastes a partial UUID or a name instead of UUID, run `companies list` or the relevant list command to find the right ID.
-- `fizko accounting contabilizar` without `--lines` auto-generates the journal entry; use `suggest-lines` first to see what lines the system recommends.
 - `fizko accounting cost-centers` lists the available cost centers (needed before using `--cost-center-id`).
